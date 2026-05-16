@@ -1,0 +1,8 @@
+banco de dados
+db: u861144328_reclamacoes
+username: u861144328_aksander
+senha: Aksander@2026
+
+ftp:
+nome de usuario: aksander/u861144328.aksander
+senha: Aksander@2026

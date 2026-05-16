@@ -1,0 +1,25 @@
+name: Deploy Doutor Oficina para Hostinger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Pegando o código do repositório
+        uses: actions/checkout@v3
+
+      - name: 🚀 Subindo arquivos via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          exclude: |
+            **/.git*
+            **/.github*
+            README.md
+            *.md
