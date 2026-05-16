@@ -809,3 +809,43 @@ footer{background:var(--navy);padding:36px 24px}
 .verdict-text strong{color:var(--navy);font-family:var(--font)}
 
 .fipe-row{display:flex;flex-direction:column;gap:8px}
+
+/* Estilos do Resultado da FIPE */
+.sb-fipe-result {
+  background: var(--green-light);
+  border: 1px solid rgba(0,168,120,.2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+  display: none;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.sb-fipe-result.show {
+  display: flex;
+}
+.sbr-item {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sbr-label {
+  color: var(--muted2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  font-weight: 700;
+  font-family: var(--font);
+}
+.sbr-value {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 16px;
+  color: var(--navy);
+}
+.sbr-green {
+  color: var(--green) !important;
+  font-size: 18px;
+}
