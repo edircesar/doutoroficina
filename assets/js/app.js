@@ -839,9 +839,7 @@ function doFipeSearch() {
 }
 
 // ══ AUTH SYSTEM ══
-let currentUser = null;
 let users = JSON.parse(localStorage.getItem('do_users') || '[]');
-let myComplaints = JSON.parse(localStorage.getItem('do_complaints') || '[]');
 let votedIds = JSON.parse(localStorage.getItem('do_voted') || '[]');
 
 function saveData() {
