@@ -753,6 +753,7 @@ setTimeout(() => renderSuggestions(''), 300);
 // ── FIPE SEARCH BAR ──
 async function sbLoadBrands() {
   const type = document.getElementById('sb-type').value;
+  const bSel = document.getElementById('sb-brand');
   const mSel = document.getElementById('sb-model');
   const ySel = document.getElementById('sb-year');
   bSel.innerHTML = '<option>Carregando…</option>'; bSel.disabled = true;
