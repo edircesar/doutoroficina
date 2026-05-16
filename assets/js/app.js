@@ -150,7 +150,40 @@ window.sbGetSession = async function() {
     } catch(e) {}
 }
 
-window.sbLoadComplaints = async function() { return mockComplaints; }
+window.sbLoadComplaints = async function() {
+  try {
+    const r = await fetch('api/get_complaints.php');
+    const d = await r.json();
+    if (d.error) return [];
+    
+    return d.map(c => {
+      let emoji = '🚗';
+      if (c.tipo_veiculo === 'motos') emoji = '🏍️';
+      if (c.tipo_veiculo === 'caminhoes') emoji = '🚚';
+      
+      let statusClass = 's-open';
+      let statusLabel = 'Aberto';
+      if (c.status === 'andamento') { statusClass = 's-progress'; statusLabel = 'Em análise'; }
+      if (c.status === 'resolvido') { statusClass = 's-resolved'; statusLabel = 'Resolvido'; }
+      
+      return {
+        emoji: emoji,
+        brand: c.marca,
+        model: `${c.modelo} ${c.ano}`,
+        title: c.titulo,
+        text: c.descricao,
+        status: statusClass,
+        statusLabel: statusLabel,
+        date: new Date(c.created_at).toLocaleDateString('pt-BR'),
+        tags: [c.categoria],
+        votes: 0
+      };
+    });
+  } catch(e) {
+    console.error(e);
+    return [];
+  }
+}
 
 // ══ DADOS MOCK ══
 const mockVehicles=[
@@ -166,12 +199,7 @@ const mockVehicles=[
   {id:'10',emoji:'🚚',brand:'Mercedes-Benz',name:'Actros',version:'2651 6x4',year:'2021',rating:3.8,count:124,badge:'Moderado',badgeClass:'badge-yellow',problems:['Elétrica','Freios']},
   {id:'11',emoji:'🚚',brand:'Scania',name:'R 450',version:'A6x2 NB Highline',year:'2023',rating:4.0,count:87,badge:'Confiável',badgeClass:'badge-green',problems:['Suspensão','Freios']},
 ];
-const mockComplaints=[
-  {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',text:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Aberto',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
-  {emoji:'🚗',brand:'Chevrolet',model:'Onix 2022',title:'Câmbio automático com solavanco frequente',text:'Desde os 15.000 km o câmbio dá solavanco na troca de 2ª para 3ª marcha. Já levei 3x na concessionária e o problema persiste.',status:'s-progress',statusLabel:'Em análise',date:'há 5 dias',tags:['Câmbio','RJ'],votes:89},
-  {emoji:'🚗',brand:'Jeep',model:'Compass 2022',title:'Transmissão com ruído metálico acima de 80 km/h',text:'Barulho começou com 22.000 km. Custo estimado pela concessionária: R$ 8.400 fora da garantia.',status:'s-open',statusLabel:'Aberto',date:'há 1 semana',tags:['Transmissão','MG'],votes:134},
-  {emoji:'🏍️',brand:'Honda',model:'CB 500 2021',title:'Farol LED apagando intermitentemente',text:'Problema elétrico no farol que apaga à noite. Situação de risco. Peça está em falta há 60 dias.',status:'s-resolved',statusLabel:'Resolvido',date:'há 2 semanas',tags:['Elétrica','Segurança','PR'],votes:56},
-];
+let mockComplaints = [];
 const rankingData=[
   {pos:1,emoji:'🏍️',brand:'Honda',name:'CG 160',score:4.5},
   {pos:2,emoji:'🚗',brand:'Toyota',name:'Corolla',score:4.1},
@@ -1132,6 +1160,7 @@ initCompare();
 // Inicializa sessão e carrega dados
 (async () => {
   await sbGetSession();
+  mockComplaints = await sbLoadComplaints();
   renderComplaintsList(mockComplaints);
 })();
 // ══ QUILL EDITOR INIT ══
