@@ -844,8 +844,16 @@ footer{background:var(--navy);padding:36px 24px}
   font-weight: 900;
   font-size: 16px;
   color: var(--navy);
+  word-wrap: break-word;
+  word-break: break-word;
 }
 .sbr-green {
   color: var(--green) !important;
   font-size: 18px;
+}
+
+@media(max-width:640px){
+  .sbr-item:first-child {
+    flex: 1 1 100%;
+  }
 }
