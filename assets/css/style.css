@@ -218,6 +218,10 @@ header{
 .sbr-green{color:var(--green)!important}
 @media(max-width:640px){
   .search-bar-wrap{position:static}
+  .search-tabs{flex-wrap:wrap;gap:8px}
+  .stab{flex:1;min-width:140px;padding:7px 10px;font-size:12px;text-align:center}
+  .search-free input{font-size:14px;padding:0 12px}
+  .sb-btn{padding:0 18px;font-size:13px}
   .search-fipe-row{flex-direction:column}
   .sfipe-group{min-width:100%}
   .search-fipe-row .sb-btn{width:100%}
