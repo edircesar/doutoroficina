@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🚚 Pegando o código do repositório
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🚀 Subindo arquivos via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
