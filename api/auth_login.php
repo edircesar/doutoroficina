@@ -18,6 +18,11 @@ $stmt->execute([$email]);
 $user = $stmt->fetch();
 
 if ($user && password_verify($senha, $user['senha'])) {
+    if ($user['status'] !== 'ativo') {
+        echo json_encode(['error' => 'Sua conta ainda não foi ativada. Verifique seu e-mail para ativar.']);
+        exit;
+    }
+
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = $user['nome'];
     $_SESSION['user_email'] = $user['email'];

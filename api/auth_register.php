@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
 require_once '../includes/db.php';
+require_once '../includes/mail.php';
 
 session_start();
 
@@ -28,23 +29,29 @@ if ($stmt->fetch()) {
 }
 
 $hash = password_hash($senha, PASSWORD_DEFAULT);
+$token = bin2hex(random_bytes(16));
 
-$stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, creditos) VALUES (?, ?, ?, 0)");
-if ($stmt->execute([$nome, $email, $hash])) {
-    $userId = $pdo->lastInsertId();
+$stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha, creditos, status, token_verificacao) VALUES (?, ?, ?, 0, 'pendente', ?)");
+if ($stmt->execute([$nome, $email, $hash, $token])) {
     
-    $_SESSION['user_id'] = $userId;
-    $_SESSION['user_name'] = $nome;
-    $_SESSION['user_email'] = $email;
+    // Envia e-mail
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'];
+    $link = "$protocol://$host/api/auth_verify.php?token=$token";
+    
+    $subject = "Confirme seu cadastro - Doutor Oficina";
+    $body = "<h1>Olá, $nome!</h1>
+             <p>Obrigado por se cadastrar no Doutor Oficina.</p>
+             <p>Para que seu cadastro seja válido e você possa logar, clique no link abaixo para ativar sua conta:</p>
+             <p><a href='$link' style='padding:10px 20px;background:#00a878;color:white;text-decoration:none;border-radius:5px;'>Ativar Minha Conta</a></p>
+             <p>Se o botão não funcionar, copie e cole o link abaixo no seu navegador:</p>
+             <p>$link</p>";
+    
+    sendMail($email, $subject, $body);
 
     echo json_encode([
         'success' => true,
-        'user' => [
-            'id' => $userId,
-            'name' => $nome,
-            'email' => $email,
-            'creditos' => 0
-        ]
+        'message' => 'Cadastro realizado com sucesso! Verifique seu e-mail para ativar sua conta.'
     ]);
 } else {
     echo json_encode(['error' => 'Erro ao criar conta.']);
