@@ -1288,31 +1288,45 @@ function renderComparison() {
 }
 
 // ══ OVERRIDE submitComplaint para salvar ══
-const _origSubmit = submitComplaint;
-function submitComplaint() {
+async function submitComplaint() {
   if (!currentUser) { closeModal(); openAuth('login'); return; }
-  // Salva a reclamação do usuário
+  
   const brandEl = document.getElementById('sel-brand');
   const modelEl = document.getElementById('sel-model');
   const yearEl  = document.getElementById('sel-year');
+  const typeBtn = document.querySelector('.vtype-btn.active');
+  
   const complaint = {
-    id: 'uc_' + Date.now(),
-    userId: currentUser.id,
-    emoji: '🚗',
     brand: brandEl.options[brandEl.selectedIndex]?.text || '—',
     model: modelEl.options[modelEl.selectedIndex]?.text || '—',
-    year:  yearEl.options[yearEl.selectedIndex]?.text || '—',
-    title: document.getElementById('inp-title').value || 'Reclamação',
-    text:  document.getElementById('inp-desc').value || '',
-    status: 's-open', statusLabel: 'Aberto',
-    date: 'agora mesmo',
-    tags: [document.getElementById('sel-state').value || 'BR'],
-    votes: 0
+    year:  yearEl.options[yearEl.selectedIndex]?.text || '',
+    vehicle_type:  typeBtn?.getAttribute('onclick')?.includes('motos') ? 'moto' : typeBtn?.getAttribute('onclick')?.includes('caminhoes') ? 'caminhao' : 'carro',
+    category:  selectedCatVal || 'Outro',
+    title:     document.getElementById('inp-title').value || 'Reclamação',
+    text:      document.getElementById('inp-desc').value || '',
+    state:     document.getElementById('sel-state').value || null,
+    km:        document.getElementById('inp-km').value || null
   };
-  myComplaints.unshift(complaint);
-  saveData();
-  document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('step-success').classList.add('active');
+  
+  try {
+    const res = await fetch(API_URL + 'save_complaint.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(complaint)
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    
+    // Recarrega reclamações da API
+    mockComplaints = await sbLoadComplaints();
+    // Atualiza a lista na página inicial
+    renderComplaintsList(mockComplaints);
+    
+    document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('step-success').classList.add('active');
+  } catch(e) {
+    alert(e.message || 'Erro ao salvar reclamação. Tente novamente.');
+  }
 }
 
 // ══ INIT ══
