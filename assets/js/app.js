@@ -729,7 +729,7 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
 
 // ══ ROUTING ══
 function showPage(page){
-  ['home','vehicle','profile','compare','all-vehicles'].forEach(p=>{
+  ['home','vehicle','profile','compare','all-vehicles','all-complaints','full-ranking'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -737,6 +737,8 @@ function showPage(page){
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
   if(page==='all-vehicles') renderAllVehicles();
+  if(page==='all-complaints') renderAllComplaints();
+  if(page==='full-ranking') renderFullRanking();
 }
 
 function checkLoginAndShowAllVehicles() {
@@ -758,6 +760,41 @@ function renderAllVehicles() {
       if (el) { el.className = 'price-val'; el.textContent = fipePrices[v.id] || '—' }
     }, 300 + Math.random() * 700);
   });
+}
+
+function checkLoginAndShowAllComplaints() {
+  if (!currentUser) {
+    openAuth('login');
+  } else {
+    showPage('all-complaints');
+  }
+}
+
+function renderAllComplaints() {
+  renderComplaintsList([...mockComplaints, ...myComplaints], null, 'all-complaints-list');
+}
+
+function checkLoginAndShowFullRanking() {
+  if (!currentUser) {
+    openAuth('login');
+  } else {
+    showPage('full-ranking');
+  }
+}
+
+function renderFullRanking() {
+  const grid = document.getElementById('all-ranking-grid');
+  if (!grid) return;
+  grid.innerHTML = rankingData.map(r => {
+    const pc = r.pos <= 3 ? `pos-${r.pos}` : 'pos-o';
+    const medal = r.pos <= 3 ? ['🥇', '🥈', '🥉'][r.pos - 1] : r.pos;
+    return `<div class="rank-item" onclick="showVehicleProfile('${r.pos}')">
+      <span class="rank-pos ${pc}">${medal}</span>
+      <div class="rank-info"><div class="rank-name">${r.emoji} ${r.name}</div><div class="rank-brand">${r.brand}</div></div>
+      <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar" style="width:${(r.score / 5 * 100).toFixed(0)}%"></div></div></div>
+      <span class="rank-score">${r.score.toFixed(1)}</span>
+    </div>`;
+  }).join('');
 }
 
 // ══ SEARCH BAR ══
@@ -1167,8 +1204,11 @@ function clearFilters() {
   renderComplaintsList(mockComplaints);
 }
 
-function renderComplaintsList(list) {
-  document.getElementById('complaints-list').innerHTML = list.map((c,i) => `
+function renderComplaintsList(list, limit = 3, targetId = 'complaints-list') {
+  const displayList = limit ? list.slice(0, limit) : list;
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.innerHTML = displayList.map((c,i) => `
     <div class="complaint-card">
       <div class="cc-top">
         <div class="cc-vehicle">

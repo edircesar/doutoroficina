@@ -145,7 +145,7 @@
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
-        <a href="#" class="see-all">Ver todas →</a>
+        <a href="#" class="see-all" onclick="checkLoginAndShowAllComplaints()">Ver todas →</a>
       </div>
       <!-- FILTROS -->
       <div class="filters-bar">
@@ -179,7 +179,7 @@
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
-        <a href="#" class="see-all">Ranking completo →</a>
+        <a href="#" class="see-all" onclick="checkLoginAndShowFullRanking()">Ranking completo →</a>
       </div>
       <div class="ranking-grid" id="ranking-grid"></div>
     </div>
@@ -234,6 +234,24 @@
     <h2 class="section-title">Todos os Veículos <span class="accent">Avaliados</span></h2>
   </div>
   <div class="vehicles-grid" id="all-vehicles-grid"></div>
+</div>
+
+<!-- ══ PAGE ALL COMPLAINTS ══ -->
+<div id="page-all-complaints" style="display:none;padding:32px 24px;max-width:1280px;margin:0 auto">
+  <button class="back-btn" onclick="showPage('home')">← Voltar para o início</button>
+  <div class="section-header" style="margin-top:20px">
+    <h2 class="section-title">Todas as <span class="accent">Reclamações</span></h2>
+  </div>
+  <div class="complaints-list" id="all-complaints-list"></div>
+</div>
+
+<!-- ══ PAGE FULL RANKING ══ -->
+<div id="page-full-ranking" style="display:none;padding:32px 24px;max-width:1280px;margin:0 auto">
+  <button class="back-btn" onclick="showPage('home')">← Voltar para o início</button>
+  <div class="section-header" style="margin-top:20px">
+    <h2 class="section-title">Ranking <span class="accent">Completo</span></h2>
+  </div>
+  <div class="ranking-grid" id="all-ranking-grid"></div>
 </div>
 
 <!-- ══ FOOTER ══ -->
