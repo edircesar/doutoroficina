@@ -215,53 +215,57 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
-function renderVehicles(){
-  document.getElementById('vehicles-grid').innerHTML=mockVehicles.map(v=>{
-    const resolved = Math.round(55 + v.rating * 5);
-    const trend = v.rating >= 4 ? '📈 Estável' : v.rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
-    const trendClass = v.rating >= 4 ? 'green' : v.rating >= 3 ? 'orange' : 'red';
-    const barColor = v.rating >= 4 ? 'var(--green)' : v.rating >= 3 ? 'var(--yellow)' : 'var(--red)';
-    const trustPct = Math.round(v.rating / 5 * 100);
-    return `
-    <div class="vehicle-card" onclick="showVehicleProfile('${v.id}')">
-      <div class="vc-top">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="vc-emoji">${v.emoji}</span>
-          <div class="vc-name">${v.name}</div>
-        </div>
-        <span class="vc-badge ${v.badgeClass}">${v.badge}</span>
+function getVehicleCardHtml(v) {
+  const resolved = Math.round(55 + v.rating * 5);
+  const trend = v.rating >= 4 ? '📈 Estável' : v.rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
+  const trendClass = v.rating >= 4 ? 'green' : v.rating >= 3 ? 'orange' : 'red';
+  const barColor = v.rating >= 4 ? 'var(--green)' : v.rating >= 3 ? 'var(--yellow)' : 'var(--red)';
+  const trustPct = Math.round(v.rating / 5 * 100);
+  return `
+  <div class="vehicle-card" onclick="showVehicleProfile('${v.id}')">
+    <div class="vc-top">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="vc-emoji">${v.emoji}</span>
+        <div class="vc-name">${v.name}</div>
       </div>
-      <div class="vc-brand">${v.brand} · ${v.year}</div>
-      <div class="vc-version">${v.version}</div>
-      <div class="vc-rating"><span class="stars">${starsHtml(v.rating)}</span><span class="star-val">${v.rating.toFixed(1)}</span></div>
-      <div class="vc-count">${v.count.toLocaleString('pt-BR')} reclamações</div>
-      <div class="vc-divider"></div>
-      <div class="vc-info-grid">
-        <div class="vc-info-item">
-          <span class="vc-info-label">⚠️ Mais relatado</span>
-          <span class="vc-info-value red">${v.problems[0]}</span>
-        </div>
-        <div class="vc-info-item">
-          <span class="vc-info-label">✅ Resolvidas</span>
-          <span class="vc-info-value green">${resolved}%</span>
-        </div>
-        <div class="vc-info-item" style="grid-column:1/-1">
-          <span class="vc-info-label">📈 Tendência</span>
-          <span class="vc-info-value ${trendClass}">${trend}</span>
-        </div>
+      <span class="vc-badge ${v.badgeClass}">${v.badge}</span>
+    </div>
+    <div class="vc-brand">${v.brand} · ${v.year}</div>
+    <div class="vc-version">${v.version}</div>
+    <div class="vc-rating"><span class="stars">${starsHtml(v.rating)}</span><span class="star-val">${v.rating.toFixed(1)}</span></div>
+    <div class="vc-count">${v.count.toLocaleString('pt-BR')} reclamações</div>
+    <div class="vc-divider"></div>
+    <div class="vc-info-grid">
+      <div class="vc-info-item">
+        <span class="vc-info-label">⚠️ Mais relatado</span>
+        <span class="vc-info-value red">${v.problems[0]}</span>
       </div>
-      <div class="vc-trust-bar">
-        <div class="vc-trust-label">
-          <span class="vc-trust-text">📊 Confiabilidade</span>
-          <span class="vc-trust-pct">${trustPct}%</span>
-        </div>
-        <div class="vc-trust-bg"><div class="vc-trust-fill" style="width:${trustPct}%;background:${barColor}"></div></div>
+      <div class="vc-info-item">
+        <span class="vc-info-label">✅ Resolvidas</span>
+        <span class="vc-info-value green">${resolved}%</span>
       </div>
-      <div class="vc-price">
-        <span class="price-label">Tabela FIPE</span>
-        <span class="price-loading" id="fipe-card-${v.id}">carregando…</span>
+      <div class="vc-info-item" style="grid-column:1/-1">
+        <span class="vc-info-label">📈 Tendência</span>
+        <span class="vc-info-value ${trendClass}">${trend}</span>
       </div>
-    </div>`}).join('');
+    </div>
+    <div class="vc-trust-bar">
+      <div class="vc-trust-label">
+        <span class="vc-trust-text">📊 Confiabilidade</span>
+        <span class="vc-trust-pct">${trustPct}%</span>
+      </div>
+      <div class="vc-trust-bg"><div class="vc-trust-fill" style="width:${trustPct}%;background:${barColor}"></div></div>
+    </div>
+    <div class="vc-price">
+      <span class="price-label">Tabela FIPE</span>
+      <span class="price-loading" id="fipe-card-${v.id}">carregando…</span>
+    </div>
+  </div>`;
+}
+
+function renderVehicles(limit = 5){
+  const list = limit ? mockVehicles.slice(0, limit) : mockVehicles;
+  document.getElementById('vehicles-grid').innerHTML=list.map(v=>getVehicleCardHtml(v)).join('');
   mockVehicles.forEach(v=>{
     setTimeout(()=>{
       const el=document.getElementById('fipe-card-'+v.id);
@@ -725,13 +729,35 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
 
 // ══ ROUTING ══
 function showPage(page){
-  ['home','vehicle','profile','compare'].forEach(p=>{
+  ['home','vehicle','profile','compare','all-vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
   window.scrollTo({top:0,behavior:'smooth'});
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
+  if(page==='all-vehicles') renderAllVehicles();
+}
+
+function checkLoginAndShowAllVehicles() {
+  if (!currentUser) {
+    openAuth('login');
+  } else {
+    showPage('all-vehicles');
+  }
+}
+
+function renderAllVehicles() {
+  const grid = document.getElementById('all-vehicles-grid');
+  if (!grid) return;
+  grid.innerHTML = mockVehicles.map(v => getVehicleCardHtml(v)).join('');
+  
+  mockVehicles.forEach(v => {
+    setTimeout(() => {
+      const el = document.getElementById('fipe-card-' + v.id);
+      if (el) { el.className = 'price-val'; el.textContent = fipePrices[v.id] || '—' }
+    }, 300 + Math.random() * 700);
+  });
 }
 
 // ══ SEARCH BAR ══

@@ -128,11 +128,17 @@
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all">Ver todos →</a>
+        <a href="#" class="see-all" onclick="checkLoginAndShowAllVehicles()">Ver todos →</a>
       </div>
       <div class="vehicles-grid" id="vehicles-grid"></div>
     </div>
   </section>
+
+  <!-- SEÇÃO PARALLAX -->
+  <div class="parallax-section" style="background-image: url('assets/car_engine_problem.png')">
+    <div class="parallax-content">
+    </div>
+  </div>
 
   <!-- RECLAMAÇÕES RECENTES -->
   <section class="section">
@@ -219,6 +225,15 @@
 <div id="page-vehicle" style="display:none;padding:32px 24px;max-width:1280px;margin:0 auto">
   <button class="back-btn" onclick="showPage('home')">← Voltar para o início</button>
   <div id="vehicle-profile-content"></div>
+</div>
+
+<!-- ══ PAGE ALL VEHICLES ══ -->
+<div id="page-all-vehicles" style="display:none;padding:32px 24px;max-width:1280px;margin:0 auto">
+  <button class="back-btn" onclick="showPage('home')">← Voltar para o início</button>
+  <div class="section-header">
+    <h2 class="section-title">Todos os Veículos <span class="accent">Avaliados</span></h2>
+  </div>
+  <div class="vehicles-grid" id="all-vehicles-grid"></div>
 </div>
 
 <!-- ══ FOOTER ══ -->

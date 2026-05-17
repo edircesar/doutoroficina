@@ -857,3 +857,21 @@ footer{background:var(--navy);padding:36px 24px}
     flex: 1 1 100%;
   }
 }
+
+/* ── PARALLAX ── */
+.parallax-section {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 300px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.parallax-content {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0,0,0,0.2);
+}
