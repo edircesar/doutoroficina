@@ -260,11 +260,7 @@
           <a href="#" onclick="showForgotPanel()" style="font-size: 13px; color: var(--muted); text-decoration: none;">Esqueci minha senha</a>
         </div>
         <button class="auth-btn" onclick="doLogin()">Entrar →</button>
-        <div class="auth-divider">ou continue com</div>
-        <div class="auth-social">
-          <button class="auth-social-btn" onclick="doSocialLogin('Google')">🇬 Google</button>
-          <button class="auth-social-btn" onclick="doSocialLogin('Facebook')">📘 Facebook</button>
-        </div>
+
       </div>
       
       <!-- Painel de Cadastro -->
