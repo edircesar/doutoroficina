@@ -22,3 +22,16 @@ CREATE TABLE IF NOT EXISTS `reclamacoes` (
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Novas colunas para validação de e-mail
+ALTER TABLE `usuarios` ADD COLUMN `status` VARCHAR(20) DEFAULT 'pendente';
+ALTER TABLE `usuarios` ADD COLUMN `token_verificacao` VARCHAR(100) DEFAULT NULL;
+
+-- Tabela para recuperação de senha
+CREATE TABLE IF NOT EXISTS `recuperacao_senha` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `usuario_id` INT NOT NULL,
+  `token` VARCHAR(100) NOT NULL,
+  `expiracao` DATETIME NOT NULL,
+  FOREIGN KEY (`usuario_id`) REFERENCES `usuarios`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

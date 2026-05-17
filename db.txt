@@ -6,3 +6,9 @@ senha: Aksander@2026
 ftp:
 nome de usuario: aksander/u861144328.aksander
 senha: Aksander@2026
+
+emails:
+contato@doutoroficina.app.br
+senha: Aksander@2026
+
+
