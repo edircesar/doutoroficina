@@ -117,14 +117,25 @@ async function renderProfile() {
   document.getElementById('profile-name-big').textContent = currentUser.name;
   document.getElementById('profile-email-big').textContent = currentUser.email;
   
-  document.getElementById('profile-count').textContent = '0';
-  document.getElementById('profile-votes-total').textContent = '0';
-  document.getElementById('profile-resolved').textContent = '0';
-  const list = document.getElementById('my-complaints-list');
-  list.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;text-align:center">
-      As reclamações reais da API serão listadas aqui futuramente.<br>
-      <button class="btn-primary" style="margin-top:16px;font-size:13px;padding:10px 20px" onclick="requireAuth()">🚨 Fazer primeira reclamação</button>
-    </div>`;
+  const myComplaintsList = mockComplaints.filter(c => c.userId == currentUser.id);
+  
+  document.getElementById('profile-count').textContent = myComplaintsList.length;
+  
+  const totalVotes = myComplaintsList.reduce((sum, c) => sum + (c.votes || 0), 0);
+  document.getElementById('profile-votes-total').textContent = totalVotes;
+  
+  const resolvedCount = myComplaintsList.filter(c => c.status === 's-resolved').length;
+  document.getElementById('profile-resolved').textContent = resolvedCount;
+  
+  if (myComplaintsList.length === 0) {
+    const list = document.getElementById('my-complaints-list');
+    list.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:12px 0;text-align:center">
+        Você ainda não fez nenhuma reclamação.<br>
+        <button class="btn-primary" style="margin-top:16px;font-size:13px;padding:10px 20px" onclick="requireAuth()">🚨 Fazer primeira reclamação</button>
+      </div>`;
+  } else {
+    renderComplaintsList(myComplaintsList, 0, 'my-complaints-list');
+  }
 }
 
 function toggleVote(btn, id, current) {
@@ -176,7 +187,8 @@ window.sbLoadComplaints = async function() {
         statusLabel: statusLabel,
         date: new Date(c.created_at).toLocaleDateString('pt-BR'),
         tags: [c.categoria],
-        votes: 0
+        votes: 0,
+        userId: c.usuario_id
       };
     });
   } catch(e) {
@@ -1157,7 +1169,7 @@ function renderProfile() {
   document.getElementById('profile-avatar-big').textContent = initials;
   document.getElementById('profile-name-big').textContent = currentUser.name;
   document.getElementById('profile-email-big').textContent = currentUser.email;
-  const mine = myComplaints.filter(c => c.userId === currentUser.id);
+  const mine = mockComplaints.filter(c => c.userId == currentUser.id);
   document.getElementById('profile-count').textContent = mine.length;
   document.getElementById('profile-votes-total').textContent = mine.reduce((s,c)=>s+c.votes,0);
   document.getElementById('profile-resolved').textContent = mine.filter(c=>c.status==='s-resolved').length;
