@@ -883,7 +883,7 @@ function openAuth(tab='login') {
   // Copia logo para o modal
   const srcImg = document.querySelector('header img');
   const wrap = document.getElementById('auth-logo-wrap');
-  if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:46px;width:auto;" alt="Doutor Oficina"/>`;
+  if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:65px;width:auto;" alt="Doutor Oficina"/>`;
 }
 function closeAuth() {
   document.getElementById('auth-modal').classList.remove('open');
