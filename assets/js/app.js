@@ -902,37 +902,134 @@ function switchAuth(tab) {
   document.getElementById('register-error').classList.remove('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim();
   const pass = document.getElementById('login-pass').value;
-  const user = users.find(u => u.email === email && u.pass === pass);
-  if (!user) { document.getElementById('login-error').classList.add('show'); return; }
-  loginSuccess(user);
+  
+  try {
+    const r = await fetch('api/auth_login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha: pass })
+    });
+    const d = await r.json();
+    
+    if (d.error) {
+      document.getElementById('login-error').textContent = d.error;
+      document.getElementById('login-error').classList.add('show');
+      return;
+    }
+    
+    loginSuccess(d.user);
+  } catch(e) {
+    console.error(e);
+  }
 }
 
-function doRegister() {
+async function doRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
   const pass = document.getElementById('reg-pass').value;
+  
   if (!name || !email || pass.length < 6) {
     document.getElementById('register-error').textContent = 'Preencha todos os campos (senha mín. 6 caracteres).';
-    document.getElementById('register-error').classList.add('show'); return;
+    document.getElementById('register-error').classList.add('show');
+    return;
   }
-  if (users.find(u => u.email === email)) {
-    document.getElementById('register-error').textContent = 'E-mail já cadastrado.';
-    document.getElementById('register-error').classList.add('show'); return;
+  
+  try {
+    const r = await fetch('api/auth_register.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: name, email, senha: pass })
+    });
+    const d = await r.json();
+    
+    if (d.error) {
+      document.getElementById('register-error').textContent = d.error;
+      document.getElementById('register-error').classList.add('show');
+      return;
+    }
+    
+    alert(d.message);
+    closeAuth();
+  } catch(e) {
+    console.error(e);
   }
-  const user = { id: Date.now(), name, email, pass, createdAt: new Date().toLocaleDateString('pt-BR') };
-  users.push(user);
-  saveData();
-  loginSuccess(user);
 }
 
 function doSocialLogin(provider) {
-  const user = { id: Date.now(), name: 'Usuário ' + provider, email: provider.toLowerCase() + '@social.com', pass: '', createdAt: new Date().toLocaleDateString('pt-BR') };
-  if (!users.find(u => u.email === user.email)) users.push(user);
-  saveData();
-  loginSuccess(user);
+  alert('Login social com ' + provider + ' ainda não configurado.');
+}
+
+function showForgotPanel() {
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-forgot').classList.add('active');
+}
+
+async function doForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errBox = document.getElementById('forgot-error');
+  const sucBox = document.getElementById('forgot-success');
+  
+  errBox.style.display = 'none';
+  sucBox.style.display = 'none';
+  
+  if (!email) {
+    errBox.textContent = 'Preencha o e-mail.';
+    errBox.style.display = 'block';
+    return;
+  }
+  
+  try {
+    const r = await fetch('api/auth_forgot.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const d = await r.json();
+    
+    sucBox.textContent = d.message;
+    sucBox.style.display = 'block';
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function doReset() {
+  const pass = document.getElementById('reset-pass').value;
+  const errBox = document.getElementById('reset-error');
+  
+  errBox.style.display = 'none';
+  
+  if (pass.length < 6) {
+    errBox.textContent = 'Senha deve ter no mínimo 6 caracteres.';
+    errBox.style.display = 'block';
+    return;
+  }
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('reset_token');
+  
+  try {
+    const r = await fetch('api/auth_reset.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, senha: pass })
+    });
+    const d = await r.json();
+    
+    if (d.error) {
+      errBox.textContent = d.error;
+      errBox.style.display = 'block';
+      return;
+    }
+    
+    alert(d.message);
+    window.location.href = './';
+  } catch(e) {
+    console.error(e);
+  }
 }
 
 function loginSuccess(user) {
@@ -1163,6 +1260,20 @@ initCompare();
   mockComplaints = await sbLoadComplaints();
   renderComplaintsList(mockComplaints);
 })();
+
+// Verifica parâmetros na URL (Ativação e Recuperação)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('verified')) {
+  alert('Conta ativada com sucesso! Você já pode fazer login.');
+  window.location.href = './'; // Limpa a URL
+}
+if (urlParams.has('reset_token')) {
+  document.getElementById('auth-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.querySelectorAll('.auth-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-reset').classList.add('active');
+  document.getElementById('auth-modal-title').textContent = 'Redefinir Senha';
+}
 // ══ QUILL EDITOR INIT ══
 let quill;
 document.addEventListener("DOMContentLoaded", function() {

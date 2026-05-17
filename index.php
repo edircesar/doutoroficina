@@ -249,15 +249,19 @@
       <div class="auth-subtitle">Para reclamar você precisa estar logado</div>
       <button class="auth-close" onclick="closeAuth()">✕</button>
     </div>
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="auth-tabs-header">
       <button class="auth-tab active" id="tab-login" onclick="switchAuth('login')">Entrar</button>
       <button class="auth-tab" id="tab-register" onclick="switchAuth('register')">Criar conta</button>
     </div>
     <div class="auth-body">
+      <!-- Painel de Login -->
       <div class="auth-panel active" id="panel-login">
         <div class="auth-error" id="login-error">E-mail ou senha incorretos.</div>
         <div class="auth-group"><label class="auth-label">E-mail</label><input type="email" class="auth-input" id="login-email" placeholder="seu@email.com"/></div>
         <div class="auth-group"><label class="auth-label">Senha</label><input type="password" class="auth-input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div style="text-align: right; margin-top: -10px; margin-bottom: 15px;">
+          <a href="#" onclick="showForgotPanel()" style="font-size: 13px; color: var(--muted); text-decoration: none;">Esqueci minha senha</a>
+        </div>
         <button class="auth-btn" onclick="doLogin()">Entrar →</button>
         <div class="auth-divider">ou continue com</div>
         <div class="auth-social">
@@ -265,12 +269,32 @@
           <button class="auth-social-btn" onclick="doSocialLogin('Facebook')">📘 Facebook</button>
         </div>
       </div>
+      
+      <!-- Painel de Cadastro -->
       <div class="auth-panel" id="panel-register">
         <div class="auth-error" id="register-error">E-mail já cadastrado.</div>
         <div class="auth-group"><label class="auth-label">Nome completo</label><input type="text" class="auth-input" id="reg-name" placeholder="Seu nome"/></div>
         <div class="auth-group"><label class="auth-label">E-mail</label><input type="email" class="auth-input" id="reg-email" placeholder="seu@email.com"/></div>
         <div class="auth-group"><label class="auth-label">Senha</label><input type="password" class="auth-input" id="reg-pass" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')doRegister()"/></div>
         <button class="auth-btn" onclick="doRegister()">Criar conta →</button>
+      </div>
+
+      <!-- Painel de Esqueci a Senha -->
+      <div class="auth-panel" id="panel-forgot">
+        <div class="auth-error" id="forgot-error" style="display:none; color:var(--red); font-size:13px; margin-bottom:10px;"></div>
+        <div class="auth-success" id="forgot-success" style="display:none; color:var(--green); font-size:13px; margin-bottom:10px;"></div>
+        <div class="auth-group"><label class="auth-label">E-mail cadastrado</label><input type="email" class="auth-input" id="forgot-email" placeholder="seu@email.com"/></div>
+        <button class="auth-btn" onclick="doForgot()">Enviar Link de Recuperação →</button>
+        <div style="text-align: center; margin-top: 15px;">
+          <a href="#" onclick="switchAuth('login')" style="font-size: 13px; color: var(--navy); text-decoration: none;">← Voltar para o Login</a>
+        </div>
+      </div>
+
+      <!-- Painel de Redefinir Senha -->
+      <div class="auth-panel" id="panel-reset">
+        <div class="auth-error" id="reset-error" style="display:none; color:var(--red); font-size:13px; margin-bottom:10px;"></div>
+        <div class="auth-group"><label class="auth-label">Nova Senha</label><input type="password" class="auth-input" id="reset-pass" placeholder="Mínimo 6 caracteres"/></div>
+        <button class="auth-btn" onclick="doReset()">Alterar Senha →</button>
       </div>
     </div>
   </div>
