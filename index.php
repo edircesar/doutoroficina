@@ -23,7 +23,7 @@
     </a>
 
     <div class="nav-actions">
-      <a class="nav-link" href="#" onclick="showPage('home')">Ranking</a>
+      <a class="nav-link" href="#" onclick="showPage('full-ranking')">Ranking</a>
       <a class="nav-link" href="#" onclick="showPage('compare')">Comparar</a>
       <div id="nav-auth-area">
         <a class="nav-link" href="#" onclick="openAuth('login')">Entrar</a>

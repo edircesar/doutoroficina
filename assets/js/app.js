@@ -309,7 +309,7 @@ function renderComplaints(){
 }
 
 function renderRanking(){
-  document.getElementById('ranking-grid').innerHTML=rankingData.map(r=>{
+  document.getElementById('ranking-grid').innerHTML=rankingData.slice(0, 6).map(r=>{
     const pc=r.pos<=3?`pos-${r.pos}`:'pos-o';
     const medal=r.pos<=3?['🥇','🥇','🥇'][r.pos-1]:r.pos;
     return`<div class="rank-item" onclick="showVehicleProfile('${r.pos}')">
