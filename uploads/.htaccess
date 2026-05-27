@@ -1,0 +1,15 @@
+# Bloquear execução de PHP em diretório de uploads
+<FilesMatch "\.(php|php5|php7|phtml|pht|phps|cgi|pl|asp|aspx|shtml|shtm|htaccess|ini|log|sh|bat)$">
+    Require all denied
+</FilesMatch>
+
+# Desabilitar engine PHP
+php_flag engine off
+
+# Bloquear listagem de diretório
+Options -Indexes
+
+# Permitir apenas tipos de arquivo seguros
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf)$">
+    Require all granted
+</FilesMatch>

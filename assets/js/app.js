@@ -741,7 +741,7 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
 
 // ══ ROUTING ══
 function showPage(page){
-  ['home','vehicle','profile','compare','all-vehicles','all-complaints','full-ranking'].forEach(p=>{
+  ['home','vehicle','profile','compare','all-vehicles','all-complaints','full-ranking','empresa-dashboard','admin-empresas'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -751,6 +751,8 @@ function showPage(page){
   if(page==='all-vehicles') renderAllVehicles();
   if(page==='all-complaints') renderAllComplaints();
   if(page==='full-ranking') renderFullRanking();
+  if(page==='empresa-dashboard') renderEmpresaDashboard();
+  if(page==='admin-empresas') loadAdminEmpresas();
 }
 
 function checkLoginAndShowAllVehicles() {
@@ -1341,6 +1343,546 @@ async function submitComplaint() {
   }
 }
 
+// ══════════════════════════════════════════
+// MÓDULO DE VERIFICAÇÃO DE EMPRESAS (JS)
+// ══════════════════════════════════════════
+
+let currentEmpresa = null;
+let empCsrfToken = '';
+let cnpjLookupTimeout = null;
+
+// ── TOAST NOTIFICATIONS ──
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span><button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.animation = 'toastOut .3s ease forwards'; setTimeout(() => toast.remove(), 300); }, 5000);
+}
+
+// ── INPUT MASKS ──
+function maskCnpj(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (v.length > 14) v = v.slice(0, 14);
+  v = v.replace(/(\d{2})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d)/, '$1.$2');
+  v = v.replace(/(\d{3})(\d)/, '$1/$2');
+  v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  el.value = v;
+}
+
+function maskPhone(el) {
+  let v = el.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 6) v = v.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d+)/, '($1) $2');
+  el.value = v;
+}
+
+// ── MODAL OPEN/CLOSE ──
+function openEmpresaModal() {
+  if (currentEmpresa) {
+    showPage('empresa-dashboard');
+    return;
+  }
+  document.getElementById('empresa-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Get CSRF token
+  fetch('api/empresa_check.php').then(r => r.json()).then(d => {
+    if (d.csrf_token) empCsrfToken = d.csrf_token;
+    if (d.empresa) {
+      currentEmpresa = d.empresa;
+      closeEmpresaModal();
+      showPage('empresa-dashboard');
+    }
+  }).catch(() => {});
+}
+
+function closeEmpresaModal() {
+  document.getElementById('empresa-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('empresa-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEmpresaModal();
+});
+
+function switchEmpTab(tab) {
+  document.getElementById('emp-tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('emp-tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('emp-panel-login').style.display = tab === 'login' ? 'block' : 'none';
+  document.getElementById('emp-panel-register').style.display = tab === 'register' ? 'block' : 'none';
+  // Clear errors
+  document.getElementById('emp-login-error').classList.remove('show');
+  document.getElementById('emp-register-error').classList.remove('show');
+}
+
+// ── MULTI-STEP NAVIGATION ──
+function empNextStep(step) {
+  // Validate current step before advancing
+  if (step > 0 && !validateEmpStep(step - 1)) return;
+  
+  document.querySelectorAll('.emp-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('emp-step-' + step).classList.add('active');
+  for (let i = 0; i < 3; i++) {
+    const dot = document.getElementById('emp-dot-' + i);
+    dot.classList.toggle('done', i < step);
+    dot.classList.toggle('active', i === step);
+  }
+}
+
+function validateEmpStep(step) {
+  const errEl = document.getElementById('emp-register-error');
+  errEl.classList.remove('show');
+  
+  if (step === 0) {
+    const cnpj = document.getElementById('emp-cnpj').value.replace(/\D/g, '');
+    const razao = document.getElementById('emp-razao').value.trim();
+    const fantasia = document.getElementById('emp-fantasia').value.trim();
+    const email = document.getElementById('emp-email').value.trim();
+    const tel = document.getElementById('emp-telefone').value.replace(/\D/g, '');
+    const senha = document.getElementById('emp-senha').value;
+    const senhaC = document.getElementById('emp-senha-confirm').value;
+    
+    if (cnpj.length !== 14) { errEl.textContent = 'CNPJ inválido.'; errEl.classList.add('show'); return false; }
+    if (!razao) { errEl.textContent = 'Razão social é obrigatória.'; errEl.classList.add('show'); return false; }
+    if (!fantasia) { errEl.textContent = 'Nome fantasia é obrigatório.'; errEl.classList.add('show'); return false; }
+    if (!email || !email.includes('@')) { errEl.textContent = 'Email inválido.'; errEl.classList.add('show'); return false; }
+    if (tel.length < 10) { errEl.textContent = 'Telefone inválido.'; errEl.classList.add('show'); return false; }
+    if (senha.length < 8) { errEl.textContent = 'Senha deve ter no mínimo 8 caracteres.'; errEl.classList.add('show'); return false; }
+    if (senha !== senhaC) { errEl.textContent = 'As senhas não conferem.'; errEl.classList.add('show'); return false; }
+    
+    // Check generic email warning
+    const genericDomains = ['gmail.com','hotmail.com','outlook.com','yahoo.com','yahoo.com.br','hotmail.com.br','live.com','uol.com.br','bol.com.br','terra.com.br','ig.com.br'];
+    const domain = email.split('@')[1]?.toLowerCase();
+    const warn = document.getElementById('emp-email-warning');
+    warn.classList.toggle('show', genericDomains.includes(domain));
+  }
+  
+  if (step === 1) {
+    const nome = document.getElementById('emp-resp-nome').value.trim();
+    const cargo = document.getElementById('emp-resp-cargo').value.trim();
+    if (!nome) { errEl.textContent = 'Nome do responsável é obrigatório.'; errEl.classList.add('show'); return false; }
+    if (!cargo) { errEl.textContent = 'Cargo é obrigatório.'; errEl.classList.add('show'); return false; }
+  }
+  
+  return true;
+}
+
+// ── CNPJ LOOKUP ──
+function onCnpjBlur() {
+  const cnpj = document.getElementById('emp-cnpj').value.replace(/\D/g, '');
+  if (cnpj.length !== 14) return;
+  
+  clearTimeout(cnpjLookupTimeout);
+  cnpjLookupTimeout = setTimeout(() => {
+    const resultEl = document.getElementById('cnpj-result');
+    const gridEl = document.getElementById('cnpj-result-grid');
+    const errEl = document.getElementById('err-cnpj');
+    
+    resultEl.classList.remove('show');
+    errEl.classList.remove('show');
+    errEl.textContent = '';
+    
+    fetch(`api/cnpj_consulta.php?cnpj=${cnpj}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          const data = d.data;
+          // Auto-fill fields
+          document.getElementById('emp-razao').value = data.razao_social || '';
+          document.getElementById('emp-fantasia').value = data.nome_fantasia || '';
+          
+          gridEl.innerHTML = `
+            <div class="cnpj-result-item"><span class="cnpj-result-label">Razão Social</span><span class="cnpj-result-value">${data.razao_social}</span></div>
+            <div class="cnpj-result-item"><span class="cnpj-result-label">Situação</span><span class="cnpj-result-value" style="color:var(--green)">${data.situacao}</span></div>
+            <div class="cnpj-result-item"><span class="cnpj-result-label">CNAE</span><span class="cnpj-result-value">${data.cnae}</span></div>
+            <div class="cnpj-result-item"><span class="cnpj-result-label">Abertura</span><span class="cnpj-result-value">${data.data_abertura} (${data.idade_anos} anos)</span></div>
+            <div class="cnpj-result-item"><span class="cnpj-result-label">Cidade</span><span class="cnpj-result-value">${data.endereco.municipio}/${data.endereco.uf}</span></div>
+          `;
+          resultEl.classList.add('show');
+        } else {
+          errEl.textContent = d.error || 'CNPJ inválido.';
+          errEl.classList.add('show');
+        }
+      })
+      .catch(() => {
+        errEl.textContent = 'Erro ao consultar CNPJ.';
+        errEl.classList.add('show');
+      });
+  }, 500);
+}
+
+// ── FILE UPLOAD HANDLER ──
+function handleFileSelect(input, zoneId) {
+  const zone = document.getElementById(zoneId);
+  const nameEl = document.getElementById(zoneId + '-name');
+  const file = input.files[0];
+  
+  if (file) {
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast('Arquivo excede 5MB.', 'error');
+      input.value = '';
+      zone.classList.remove('has-file');
+      return;
+    }
+    zone.classList.add('has-file');
+    nameEl.textContent = file.name;
+  } else {
+    zone.classList.remove('has-file');
+  }
+}
+
+// ── EMPRESA REGISTER SUBMIT ──
+async function submitEmpresaRegister() {
+  if (!validateEmpStep(2)) return;
+  
+  // Check files
+  const fileCnpj = document.querySelector('#uz-cnpj input[type=file]').files[0];
+  const fileDoc = document.querySelector('#uz-doc input[type=file]').files[0];
+  const fileSelfie = document.querySelector('#uz-selfie input[type=file]').files[0];
+  
+  if (!fileCnpj || !fileDoc || !fileSelfie) {
+    showToast('Envie todos os 3 documentos obrigatórios.', 'error');
+    return;
+  }
+  
+  const btn = document.getElementById('emp-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="emp-spinner"></span> Cadastrando...';
+  
+  const formData = new FormData();
+  formData.append('csrf_token', empCsrfToken);
+  formData.append('razao_social', document.getElementById('emp-razao').value.trim());
+  formData.append('nome_fantasia', document.getElementById('emp-fantasia').value.trim());
+  formData.append('cnpj', document.getElementById('emp-cnpj').value);
+  formData.append('email', document.getElementById('emp-email').value.trim());
+  formData.append('telefone', document.getElementById('emp-telefone').value);
+  formData.append('senha', document.getElementById('emp-senha').value);
+  formData.append('senha_confirm', document.getElementById('emp-senha-confirm').value);
+  formData.append('site', document.getElementById('emp-site').value.trim());
+  formData.append('responsavel_nome', document.getElementById('emp-resp-nome').value.trim());
+  formData.append('responsavel_cargo', document.getElementById('emp-resp-cargo').value.trim());
+  formData.append('doc_cnpj', fileCnpj);
+  formData.append('doc_responsavel', fileDoc);
+  formData.append('doc_selfie', fileSelfie);
+  
+  try {
+    const res = await fetch('api/empresa_register.php', { method: 'POST', body: formData });
+    const data = await res.json();
+    
+    if (data.success) {
+      document.querySelectorAll('.emp-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('emp-step-success').classList.add('active');
+      showToast('Empresa cadastrada com sucesso!', 'success');
+    } else {
+      const errEl = document.getElementById('emp-register-error');
+      let msg = data.error || 'Erro ao cadastrar.';
+      if (data.validation_errors) {
+        msg += '\n' + Object.values(data.validation_errors).join('\n');
+      }
+      errEl.textContent = msg;
+      errEl.classList.add('show');
+      showToast(data.error || 'Erro no cadastro.', 'error');
+    }
+  } catch (e) {
+    showToast('Erro de conexão. Tente novamente.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✅ Cadastrar Empresa';
+  }
+}
+
+// ── EMPRESA LOGIN ──
+async function doEmpresaLogin() {
+  const cnpj = document.getElementById('emp-login-cnpj').value;
+  const senha = document.getElementById('emp-login-senha').value;
+  const errEl = document.getElementById('emp-login-error');
+  errEl.classList.remove('show');
+  
+  if (!cnpj || !senha) {
+    errEl.textContent = 'Preencha CNPJ e senha.';
+    errEl.classList.add('show');
+    return;
+  }
+  
+  const btn = document.getElementById('emp-login-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="emp-spinner"></span> Entrando...';
+  
+  try {
+    const res = await fetch('api/empresa_login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cnpj, senha, csrf_token: empCsrfToken })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      currentEmpresa = data.data.empresa;
+      empCsrfToken = data.data.csrf_token || empCsrfToken;
+      closeEmpresaModal();
+      showPage('empresa-dashboard');
+      showToast(`Bem-vindo, ${currentEmpresa.nome_fantasia}!`, 'success');
+    } else {
+      errEl.textContent = data.error || 'Erro ao fazer login.';
+      errEl.classList.add('show');
+    }
+  } catch (e) {
+    errEl.textContent = 'Erro de conexão.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '🔑 Entrar como Empresa';
+  }
+}
+
+// ── EMPRESA LOGOUT ──
+async function doEmpresaLogout() {
+  await fetch('api/empresa_logout.php', { method: 'POST' });
+  currentEmpresa = null;
+  showPage('home');
+  showToast('Logout realizado.', 'info');
+}
+
+// ── EMPRESA DASHBOARD ──
+async function renderEmpresaDashboard() {
+  if (!currentEmpresa) {
+    // Try to restore session
+    try {
+      const res = await fetch('api/empresa_check.php');
+      const data = await res.json();
+      if (data.success && data.empresa) {
+        currentEmpresa = data.empresa;
+        empCsrfToken = data.csrf_token || '';
+      } else {
+        showPage('home');
+        openEmpresaModal();
+        return;
+      }
+    } catch (e) { showPage('home'); return; }
+  }
+  
+  const e = currentEmpresa;
+  document.getElementById('emp-dash-name').textContent = e.nome_fantasia;
+  document.getElementById('emp-dash-cnpj').textContent = e.cnpj;
+  document.getElementById('emp-dash-score').textContent = e.score_confianca;
+  document.getElementById('emp-dash-score-val').textContent = e.score_confianca + '/100';
+  document.getElementById('emp-dash-score-bar').style.width = e.score_confianca + '%';
+  
+  // Score bar color
+  const scoreColor = e.score_confianca >= 80 ? 'var(--green)' : e.score_confianca >= 60 ? '#00a878' : e.score_confianca >= 40 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('emp-dash-score-bar').style.background = scoreColor;
+  document.getElementById('emp-dash-score-val').style.color = scoreColor;
+  
+  // Status badge
+  const statusEl = document.getElementById('emp-dash-status');
+  statusEl.textContent = e.status_verificacao.replace('_', ' ');
+  statusEl.className = 'status-badge status-' + e.status_verificacao;
+  
+  // Selo
+  const seloEl = document.getElementById('emp-dash-selo');
+  seloEl.innerHTML = e.selo_verificado
+    ? '<span class="selo-verificado"><span class="selo-verificado-icon">✅</span> Empresa Verificada</span>'
+    : '';
+  
+  // Verification timeline
+  const steps = [
+    { key: 'PENDENTE', label: 'Cadastro realizado', icon: '📝' },
+    { key: 'CNPJ_VALIDADO', label: 'CNPJ validado via API', icon: '🔍' },
+    { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', icon: '📄' },
+    { key: 'VERIFICADA', label: 'Empresa verificada', icon: '✅' }
+  ];
+  const statusOrder = ['PENDENTE','CNPJ_VALIDADO','DOCUMENTOS_ENVIADOS','VERIFICADA'];
+  const currentIdx = statusOrder.indexOf(e.status_verificacao);
+  
+  let timelineHtml = '<div style="display:flex;flex-direction:column;gap:12px">';
+  steps.forEach((s, i) => {
+    const done = i <= currentIdx && e.status_verificacao !== 'REJEITADA';
+    const active = i === currentIdx;
+    timelineHtml += `<div style="display:flex;align-items:center;gap:12px;opacity:${done ? 1 : 0.4}">
+      <span style="font-size:20px">${done ? '✅' : '⏳'}</span>
+      <span style="font-family:var(--font);font-weight:${active ? 800 : 600};font-size:14px;color:${done ? 'var(--navy)' : 'var(--muted)'}">${s.label}</span>
+    </div>`;
+  });
+  
+  if (e.status_verificacao === 'REJEITADA') {
+    timelineHtml += `<div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px">❌</span><span style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--red)">Empresa rejeitada</span></div>`;
+  }
+  
+  timelineHtml += '</div>';
+  document.getElementById('emp-dash-timeline').innerHTML = timelineHtml;
+}
+
+// ── ADMIN PANEL ──
+let adminCurrentFilter = '';
+
+async function loadAdminEmpresas(status = '') {
+  adminCurrentFilter = status;
+  const tbody = document.getElementById('admin-empresas-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px"><span class="ai-spinner"></span> Carregando...</td></tr>';
+  
+  // Update filter buttons
+  document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
+  event.target?.classList.add('active');
+  
+  try {
+    const url = `api/admin_empresas_list.php?status=${status}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    
+    if (!data.success) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:40px">Acesso negado ou erro.</td></tr>';
+      return;
+    }
+    
+    const empresas = data.data.empresas;
+    if (!empresas.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Nenhuma empresa encontrada.</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = empresas.map(e => `
+      <tr>
+        <td>
+          <div class="emp-name">${e.nome_fantasia}</div>
+          <div style="font-size:11px;color:var(--muted)">${e.razao_social}</div>
+        </td>
+        <td><span class="emp-cnpj">${e.cnpj}</span></td>
+        <td><span class="status-badge status-${e.status_verificacao}">${e.status_verificacao.replace('_',' ')}</span></td>
+        <td><strong style="color:${e.score_confianca >= 60 ? 'var(--green)' : 'var(--yellow)'}">${e.score_confianca}</strong></td>
+        <td style="font-size:12px;color:var(--muted)">${new Date(e.created_at).toLocaleDateString('pt-BR')}</td>
+        <td>
+          <button class="admin-action-btn admin-btn-view" onclick="openReviewModal(${e.id})">📋 Ver</button>
+          ${e.status_verificacao !== 'VERIFICADA' && e.status_verificacao !== 'REJEITADA' ? `
+            <button class="admin-action-btn admin-btn-approve" onclick="adminAction(${e.id},'aprovar')">✅</button>
+            <button class="admin-action-btn admin-btn-reject" onclick="adminAction(${e.id},'rejeitar')">❌</button>
+          ` : ''}
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:40px">Erro ao carregar.</td></tr>';
+  }
+}
+
+function filterAdminEmpresas(status) {
+  loadAdminEmpresas(status);
+}
+
+// ── ADMIN ACTIONS ──
+async function adminAction(empresaId, acao) {
+  let motivo = '';
+  if (acao === 'rejeitar') {
+    motivo = prompt('Informe o motivo da rejeição:');
+    if (!motivo) return;
+  }
+  
+  if (!confirm(`Deseja ${acao} esta empresa?`)) return;
+  
+  try {
+    const res = await fetch('api/admin_empresa_action.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresa_id: empresaId, acao, motivo })
+    });
+    const data = await res.json();
+    
+    if (data.success) {
+      showToast(data.message, 'success');
+      loadAdminEmpresas(adminCurrentFilter);
+    } else {
+      showToast(data.error || 'Erro.', 'error');
+    }
+  } catch (e) {
+    showToast('Erro de conexão.', 'error');
+  }
+}
+
+// ── REVIEW MODAL ──
+async function openReviewModal(empresaId) {
+  document.getElementById('review-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  const body = document.getElementById('review-modal-body');
+  body.innerHTML = '<div style="text-align:center;padding:40px"><span class="ai-spinner"></span> Carregando...</div>';
+  
+  try {
+    const res = await fetch(`api/admin_empresa_logs.php?empresa_id=${empresaId}`);
+    const data = await res.json();
+    
+    if (!data.success) {
+      body.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px">Erro ao carregar dados.</div>';
+      return;
+    }
+    
+    const { empresa, logs, documentos } = data.data;
+    document.getElementById('review-empresa-name').textContent = empresa.nome_fantasia + ' — ' + empresa.cnpj;
+    
+    let html = '';
+    
+    // Documentos
+    html += '<div class="review-section"><div class="review-section-title">📄 Documentos Enviados</div>';
+    if (documentos.length) {
+      html += '<div class="review-doc-grid">';
+      const docIcons = { cnpj_card: '📄', documento_responsavel: '🪪', selfie: '🤳' };
+      const docLabels = { cnpj_card: 'Cartão CNPJ', documento_responsavel: 'Documento', selfie: 'Selfie' };
+      documentos.forEach(d => {
+        html += `<a href="${d.arquivo}" target="_blank" class="review-doc-card">
+          <span class="review-doc-icon">${docIcons[d.tipo_documento] || '📎'}</span>
+          <div class="review-doc-type">${docLabels[d.tipo_documento] || d.tipo_documento}</div>
+        </a>`;
+      });
+      html += '</div>';
+    } else {
+      html += '<div style="color:var(--muted);font-size:13px">Nenhum documento enviado.</div>';
+    }
+    html += '</div>';
+    
+    // Logs
+    html += '<div class="review-section"><div class="review-section-title">📋 Histórico de Verificação</div>';
+    if (logs.length) {
+      logs.forEach(l => {
+        html += `<div class="review-log-item">
+          <span class="review-log-date">${new Date(l.created_at).toLocaleDateString('pt-BR')}</span>
+          <span class="review-log-action">${l.acao}</span>
+          <span class="review-log-detail">${l.detalhes || ''}${l.admin_nome ? ' (Admin: ' + l.admin_nome + ')' : ''}</span>
+        </div>`;
+      });
+    } else {
+      html += '<div style="color:var(--muted);font-size:13px">Sem histórico.</div>';
+    }
+    html += '</div>';
+    
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--red);text-align:center;padding:20px">Erro de conexão.</div>';
+  }
+}
+
+function closeReviewModal() {
+  document.getElementById('review-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('review-modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeReviewModal();
+});
+
+// ── CHECK EMPRESA SESSION ON LOAD ──
+async function checkEmpresaSession() {
+  try {
+    const res = await fetch('api/empresa_check.php');
+    const data = await res.json();
+    if (data.success && data.empresa) {
+      currentEmpresa = data.empresa;
+      empCsrfToken = data.csrf_token || '';
+    }
+  } catch (e) {}
+}
+
 // ══ INIT ══
 renderVehicles();
 renderRanking();
@@ -1349,6 +1891,7 @@ initCompare();
 // Inicializa sessão e carrega dados
 (async () => {
   await sbGetSession();
+  await checkEmpresaSession();
   mockComplaints = await sbLoadComplaints();
   renderComplaintsList(mockComplaints);
 })();

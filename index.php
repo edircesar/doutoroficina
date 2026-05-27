@@ -25,6 +25,7 @@
     <div class="nav-actions">
       <a class="nav-link" href="#" onclick="showPage('full-ranking')">Ranking</a>
       <a class="nav-link" href="#" onclick="showPage('compare')">Comparar</a>
+      <button class="btn-nav-empresa" onclick="openEmpresaModal()">🏢 Sou Empresa</button>
       <div id="nav-auth-area">
         <a class="nav-link" href="#" onclick="openAuth('login')">Entrar</a>
         <button class="btn-nav-reclamar" onclick="requireAuth()">+ Reclamar</button>
@@ -519,6 +520,265 @@
           <button class="btn-submit" style="margin-top:24px;max-width:220px;display:block;margin-left:auto;margin-right:auto" onclick="closeModal()">Fechar</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST CONTAINER ══ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══ EMPRESA REGISTER/LOGIN MODAL ══ -->
+<div class="empresa-overlay" id="empresa-modal">
+  <div class="empresa-modal">
+    <div class="empresa-modal-header">
+      <button class="empresa-modal-close" onclick="closeEmpresaModal()">&times;</button>
+      <div class="empresa-modal-title" id="emp-modal-title">🏢 Área da Empresa</div>
+      <div class="empresa-modal-sub" id="emp-modal-sub">Reivindique seu perfil e responda reclamações oficialmente</div>
+    </div>
+    <div class="empresa-modal-body">
+      <!-- TABS: Login / Cadastro -->
+      <div class="emp-login-tabs">
+        <button class="emp-login-tab active" onclick="switchEmpTab('login')" id="emp-tab-login">🔑 Entrar</button>
+        <button class="emp-login-tab" onclick="switchEmpTab('register')" id="emp-tab-register">📋 Cadastrar Empresa</button>
+      </div>
+
+      <!-- PANEL: LOGIN -->
+      <div id="emp-panel-login">
+        <div class="auth-error" id="emp-login-error"></div>
+        <div class="form-group">
+          <label class="form-label">CNPJ</label>
+          <input type="text" class="form-input" id="emp-login-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCnpj(this)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Senha</label>
+          <input type="password" class="form-input" id="emp-login-senha" placeholder="Sua senha">
+        </div>
+        <button class="btn-submit" style="width:100%;background:var(--green)" onclick="doEmpresaLogin()" id="emp-login-btn">🔑 Entrar como Empresa</button>
+      </div>
+
+      <!-- PANEL: REGISTER -->
+      <div id="emp-panel-register" style="display:none">
+        <div class="auth-error" id="emp-register-error"></div>
+
+        <!-- Progress Steps -->
+        <div class="emp-steps">
+          <div class="emp-step-dot active" id="emp-dot-0"></div>
+          <div class="emp-step-dot" id="emp-dot-1"></div>
+          <div class="emp-step-dot" id="emp-dot-2"></div>
+        </div>
+
+        <!-- STEP 1: Dados da Empresa -->
+        <div class="emp-step active" id="emp-step-0">
+          <div class="emp-step-label">
+            <span class="emp-step-num">1</span>
+            <div><div class="emp-step-text">Dados da Empresa</div><div class="emp-step-sub">CNPJ, email, telefone e senha</div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CNPJ *</label>
+            <input type="text" class="form-input" id="emp-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="maskCnpj(this)" onblur="onCnpjBlur()">
+            <div class="form-error-text" id="err-cnpj"></div>
+          </div>
+          <div class="cnpj-result" id="cnpj-result">
+            <div class="cnpj-result-title">✅ CNPJ Válido e Ativo</div>
+            <div class="cnpj-result-grid" id="cnpj-result-grid"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Razão Social *</label>
+              <input type="text" class="form-input" id="emp-razao" placeholder="Razão social da empresa">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nome Fantasia *</label>
+              <input type="text" class="form-input" id="emp-fantasia" placeholder="Nome fantasia">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Email Corporativo *</label>
+              <input type="email" class="form-input" id="emp-email" placeholder="contato@empresa.com.br">
+              <div class="email-warning" id="emp-email-warning">⚠️ Email genérico detectado. Será necessário análise manual adicional.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone *</label>
+              <input type="text" class="form-input" id="emp-telefone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Site Oficial (opcional)</label>
+            <input type="url" class="form-input" id="emp-site" placeholder="https://www.empresa.com.br">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Senha *</label>
+              <input type="password" class="form-input" id="emp-senha" placeholder="Mínimo 8 caracteres">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirmar Senha *</label>
+              <input type="password" class="form-input" id="emp-senha-confirm" placeholder="Repita a senha">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-submit" style="background:var(--green)" onclick="empNextStep(1)">Próximo →</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: Responsável -->
+        <div class="emp-step" id="emp-step-1">
+          <div class="emp-step-label">
+            <span class="emp-step-num">2</span>
+            <div><div class="emp-step-text">Responsável pela Empresa</div><div class="emp-step-sub">Dados de quem representa a empresa</div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nome Completo do Responsável *</label>
+            <input type="text" class="form-input" id="emp-resp-nome" placeholder="Nome completo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cargo do Responsável *</label>
+            <input type="text" class="form-input" id="emp-resp-cargo" placeholder="Ex: Diretor, Gerente, Proprietário">
+          </div>
+          <div class="form-actions">
+            <button class="btn-back" onclick="empNextStep(0)">← Voltar</button>
+            <button class="btn-submit" style="background:var(--green)" onclick="empNextStep(2)">Próximo →</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: Documentos -->
+        <div class="emp-step" id="emp-step-2">
+          <div class="emp-step-label">
+            <span class="emp-step-num">3</span>
+            <div><div class="emp-step-text">Documentos para Verificação</div><div class="emp-step-sub">Envie os documentos para validar sua empresa</div></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cartão CNPJ (PDF, JPG ou PNG) *</label>
+            <div class="upload-zone" id="uz-cnpj">
+              <span class="upload-zone-icon">📄</span>
+              <div class="upload-zone-text">Clique para enviar o Cartão CNPJ</div>
+              <div class="upload-zone-hint">PDF, JPG ou PNG • Máx 5MB</div>
+              <input type="file" name="doc_cnpj" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'uz-cnpj')">
+              <div class="upload-zone-preview"><span class="upload-preview-check">✅</span><span class="upload-preview-name" id="uz-cnpj-name"></span></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Documento do Responsável (RG/CNH) *</label>
+            <div class="upload-zone" id="uz-doc">
+              <span class="upload-zone-icon">🪪</span>
+              <div class="upload-zone-text">Clique para enviar documento</div>
+              <div class="upload-zone-hint">PDF, JPG ou PNG • Máx 5MB</div>
+              <input type="file" name="doc_responsavel" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'uz-doc')">
+              <div class="upload-zone-preview"><span class="upload-preview-check">✅</span><span class="upload-preview-name" id="uz-doc-name"></span></div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selfie segurando o documento *</label>
+            <div class="upload-zone" id="uz-selfie">
+              <span class="upload-zone-icon">🤳</span>
+              <div class="upload-zone-text">Clique para enviar selfie</div>
+              <div class="upload-zone-hint">JPG ou PNG • Máx 5MB</div>
+              <input type="file" name="doc_selfie" accept=".jpg,.jpeg,.png" onchange="handleFileSelect(this, 'uz-selfie')">
+              <div class="upload-zone-preview"><span class="upload-preview-check">✅</span><span class="upload-preview-name" id="uz-selfie-name"></span></div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-back" onclick="empNextStep(1)">← Voltar</button>
+            <button class="btn-submit" style="background:var(--green)" onclick="submitEmpresaRegister()" id="emp-submit-btn">✅ Cadastrar Empresa</button>
+          </div>
+        </div>
+
+        <!-- SUCCESS -->
+        <div class="emp-step" id="emp-step-success">
+          <div class="success-box">
+            <div class="success-icon">🎉</div>
+            <div class="success-title">Empresa cadastrada!</div>
+            <div class="success-text">Seus documentos foram enviados e serão analisados pela nossa equipe.<br>Você receberá uma notificação quando a verificação for concluída.</div>
+            <button class="btn-submit" style="margin-top:24px;max-width:220px;display:block;margin-left:auto;margin-right:auto;background:var(--green)" onclick="closeEmpresaModal()">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EMPRESA DASHBOARD PAGE ══ -->
+<div id="page-empresa-dashboard">
+  <div class="emp-dash-wrap">
+    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
+    <div class="emp-dash-hero">
+      <div class="emp-dash-avatar" id="emp-dash-avatar">🏢</div>
+      <div class="emp-dash-info">
+        <div class="emp-dash-name">
+          <span id="emp-dash-name">—</span>
+          <span id="emp-dash-selo"></span>
+        </div>
+        <div class="emp-dash-cnpj" id="emp-dash-cnpj">—</div>
+        <div class="emp-dash-stats">
+          <div class="emp-dash-stat">
+            <div class="emp-dash-stat-n" id="emp-dash-score">0</div>
+            <div class="emp-dash-stat-l">Score</div>
+          </div>
+          <div class="emp-dash-stat">
+            <div class="emp-dash-stat-n"><span class="status-badge" id="emp-dash-status">—</span></div>
+            <div class="emp-dash-stat-l">Status</div>
+          </div>
+        </div>
+        <div class="score-bar-wrap">
+          <div class="score-bar-header">
+            <span class="score-bar-label">📊 Score de Confiança</span>
+            <span class="score-bar-value" id="emp-dash-score-val" style="color:var(--green)">0/100</span>
+          </div>
+          <div class="score-bar-bg"><div class="score-bar-fill" id="emp-dash-score-bar" style="width:0%;background:var(--green)"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="pc-title"><span class="dot"></span>Status da Verificação</div>
+      <div id="emp-dash-timeline" style="padding:8px 0;color:var(--muted);font-size:14px">Carregando...</div>
+    </div>
+    <button class="btn-submit" style="margin-top:16px;background:var(--red)" onclick="doEmpresaLogout()">🚪 Sair da Conta Empresa</button>
+  </div>
+</div>
+
+<!-- ══ ADMIN PANEL PAGE ══ -->
+<div id="page-admin-empresas">
+  <div class="admin-wrap">
+    <div class="admin-header">
+      <div class="admin-title">🛡️ Painel Administrativo — Empresas</div>
+      <div class="admin-filters">
+        <button class="admin-filter-btn active" onclick="filterAdminEmpresas('')">Todas</button>
+        <button class="admin-filter-btn" onclick="filterAdminEmpresas('DOCUMENTOS_ENVIADOS')">📋 Pendentes</button>
+        <button class="admin-filter-btn" onclick="filterAdminEmpresas('VERIFICADA')">✅ Verificadas</button>
+        <button class="admin-filter-btn" onclick="filterAdminEmpresas('REJEITADA')">❌ Rejeitadas</button>
+      </div>
+    </div>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>CNPJ</th>
+            <th>Status</th>
+            <th>Score</th>
+            <th>Data</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="admin-empresas-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Carregando empresas...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN REVIEW MODAL ══ -->
+<div class="empresa-overlay" id="review-modal-overlay">
+  <div class="empresa-modal review-modal">
+    <div class="empresa-modal-header">
+      <button class="empresa-modal-close" onclick="closeReviewModal()">&times;</button>
+      <div class="empresa-modal-title">📋 Revisão de Empresa</div>
+      <div class="empresa-modal-sub" id="review-empresa-name">—</div>
+    </div>
+    <div class="empresa-modal-body" id="review-modal-body">
+      <div style="text-align:center;color:var(--muted);padding:40px">Carregando...</div>
     </div>
   </div>
 </div>
