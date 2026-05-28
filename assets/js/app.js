@@ -1117,8 +1117,6 @@ function loginSuccess(user) {
   if (pendingComplaint) { pendingComplaint = false; openModal(); }
 }
 
-let currentEmpresa = null;
-
 function logout() {
   currentUser = null;
   fetch(API_URL + 'auth_logout.php').then(() => {
