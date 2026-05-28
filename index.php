@@ -740,34 +740,72 @@
 <!-- ══ ADMIN PANEL PAGE ══ -->
 <div id="page-admin-empresas">
   <div class="admin-wrap">
-    <div class="admin-header">
-      <div class="admin-title">🛡️ Painel Administrativo — Empresas</div>
-      <div class="admin-filters">
-        <button class="admin-filter-btn active" onclick="filterAdminEmpresas('')">Todas</button>
-        <button class="admin-filter-btn" onclick="filterAdminEmpresas('DOCUMENTOS_ENVIADOS')">📋 Pendentes</button>
-        <button class="admin-filter-btn" onclick="filterAdminEmpresas('VERIFICADA')">✅ Verificadas</button>
-        <button class="admin-filter-btn" onclick="filterAdminEmpresas('REJEITADA')">❌ Rejeitadas</button>
+    <div class="admin-header" style="margin-bottom: 24px; border-bottom: 1.5px solid var(--border); padding-bottom: 16px;">
+      <div class="admin-title">🛡️ Painel Administrativo</div>
+      <div class="admin-filters" style="gap: 8px;">
+        <button class="admin-filter-btn active" id="admin-tab-companies-btn" onclick="switchAdminTab('companies')" style="font-size: 13px; padding: 8px 20px; display: flex; align-items: center; gap: 6px;">🏢 Empresas</button>
+        <button class="admin-filter-btn" id="admin-tab-users-btn" onclick="switchAdminTab('users')" style="font-size: 13px; padding: 8px 20px; display: flex; align-items: center; gap: 6px;">👤 Usuários</button>
       </div>
     </div>
-    <div class="admin-table-wrap">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Empresa</th>
-            <th>CNPJ</th>
-            <th>Status</th>
-            <th>Score</th>
-            <th>Data</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="admin-empresas-tbody">
-          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Carregando empresas...</td></tr>
-        </tbody>
-      </table>
+    
+    <!-- SUB-SECTION FOR COMPANIES -->
+    <div id="admin-companies-section">
+      <div class="admin-header" style="margin-top: 16px;">
+        <div class="admin-title" style="font-size: 18px; color: var(--muted); font-weight: 700;">Moderando Cadastro de Empresas</div>
+        <div class="admin-filters">
+          <button class="admin-filter-btn active" onclick="filterAdminEmpresas('')">Todas</button>
+          <button class="admin-filter-btn" onclick="filterAdminEmpresas('DOCUMENTOS_ENVIADOS')">📋 Pendentes</button>
+          <button class="admin-filter-btn" onclick="filterAdminEmpresas('VERIFICADA')">✅ Verificadas</button>
+          <button class="admin-filter-btn" onclick="filterAdminEmpresas('REJEITADA')">❌ Rejeitadas</button>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>CNPJ</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Data</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="admin-empresas-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Carregando empresas...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- SUB-SECTION FOR USERS -->
+    <div id="admin-users-section" style="display: none;">
+      <div class="admin-header" style="margin-top: 16px;">
+        <div class="admin-title" style="font-size: 18px; color: var(--muted); font-weight: 700;">Usuários Cadastrados</div>
+        <div style="font-size: 12px; color: var(--muted); font-weight: 700; padding: 6px 14px; background: var(--bg); border: 1.5px solid var(--border2); border-radius: 8px;" id="admin-users-count">Total: carregando...</div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th>Status</th>
+              <th>Créditos</th>
+              <th>Data de Cadastro</th>
+            </tr>
+          </thead>
+          <tbody id="admin-users-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Carregando usuários...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
   </div>
 </div>
+
 
 <!-- ══ ADMIN REVIEW MODAL ══ -->
 <div class="empresa-overlay" id="review-modal-overlay">

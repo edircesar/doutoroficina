@@ -26,6 +26,7 @@ if ($user && password_verify($senha, $user['senha'])) {
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['user_name'] = $user['nome'];
     $_SESSION['user_email'] = $user['email'];
+    $_SESSION['is_admin'] = $user['is_admin'];
     
     echo json_encode([
         'success' => true, 
@@ -33,7 +34,8 @@ if ($user && password_verify($senha, $user['senha'])) {
             'id' => $user['id'],
             'name' => $user['nome'],
             'email' => $user['email'],
-            'creditos' => $user['creditos']
+            'creditos' => $user['creditos'],
+            'is_admin' => (int) $user['is_admin']
         ]
     ]);
 } else {

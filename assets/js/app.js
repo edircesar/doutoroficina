@@ -1117,16 +1117,34 @@ function loginSuccess(user) {
   if (pendingComplaint) { pendingComplaint = false; openModal(); }
 }
 
+let currentEmpresa = null;
+
 function logout() {
   currentUser = null;
-  updateNavAuth();
-  showPage('home');
-  document.getElementById('user-dropdown').classList.remove('open');
+  fetch(API_URL + 'auth_logout.php').then(() => {
+    updateNavAuth();
+    showPage('home');
+    const dd = document.getElementById('user-dropdown');
+    if (dd) dd.classList.remove('open');
+  });
 }
 
 function updateNavAuth() {
   const area = document.getElementById('nav-auth-area');
-  if (currentUser) {
+  
+  if (currentEmpresa) {
+    const initials = currentEmpresa.nome_fantasia.slice(0,2).toUpperCase();
+    area.innerHTML = `
+      <div class="nav-user">
+        <span class="nav-user-name" style="color:var(--green);font-weight:700">🏢 ${currentEmpresa.nome_fantasia.split(' ')[0]}</span>
+        <div class="nav-avatar" onclick="toggleDropdown()" style="background:linear-gradient(135deg,var(--green),#00d9a0);">${initials}</div>
+        <div class="user-dropdown" id="user-dropdown">
+          <button class="udrop-item" onclick="showPage('empresa-dashboard')">📊 Meu Painel</button>
+          <div class="udrop-divider"></div>
+          <button class="udrop-item" onclick="doEmpresaLogout()">🚪 Sair</button>
+        </div>
+      </div>`;
+  } else if (currentUser) {
     const initials = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     area.innerHTML = `
       <div class="nav-user">
@@ -1135,6 +1153,10 @@ function updateNavAuth() {
         <div class="user-dropdown" id="user-dropdown">
           <button class="udrop-item" onclick="showPage('profile')">👤 Meu perfil</button>
           <button class="udrop-item" onclick="showPage('compare')">⚖️ Comparar veículos</button>
+          ${currentUser.is_admin ? `
+            <div class="udrop-divider"></div>
+            <button class="udrop-item" onclick="showPage('admin-empresas')" style="color:var(--red);font-weight:700">🛡️ Painel Admin</button>
+          ` : ''}
           <div class="udrop-divider"></div>
           <button class="udrop-item" onclick="requireAuth()">🚨 Nova reclamação</button>
           <div class="udrop-divider"></div>
@@ -1625,6 +1647,7 @@ async function doEmpresaLogin() {
       currentEmpresa = data.data.empresa;
       empCsrfToken = data.data.csrf_token || empCsrfToken;
       closeEmpresaModal();
+      updateNavAuth();
       showPage('empresa-dashboard');
       showToast(`Bem-vindo, ${currentEmpresa.nome_fantasia}!`, 'success');
     } else {
@@ -1644,6 +1667,7 @@ async function doEmpresaLogin() {
 async function doEmpresaLogout() {
   await fetch('api/empresa_logout.php', { method: 'POST' });
   currentEmpresa = null;
+  updateNavAuth();
   showPage('home');
   showToast('Logout realizado.', 'info');
 }
@@ -1658,6 +1682,7 @@ async function renderEmpresaDashboard() {
       if (data.success && data.empresa) {
         currentEmpresa = data.empresa;
         empCsrfToken = data.csrf_token || '';
+        updateNavAuth();
       } else {
         showPage('home');
         openEmpresaModal();
@@ -1879,6 +1904,7 @@ async function checkEmpresaSession() {
     if (data.success && data.empresa) {
       currentEmpresa = data.empresa;
       empCsrfToken = data.csrf_token || '';
+      updateNavAuth();
     }
   } catch (e) {}
 }
@@ -1930,3 +1956,72 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
+// ── SWITCH ADMIN TAB ──
+function switchAdminTab(tab) {
+  const compSec = document.getElementById('admin-companies-section');
+  const userSec = document.getElementById('admin-users-section');
+  const compBtn = document.getElementById('admin-tab-companies-btn');
+  const userBtn = document.getElementById('admin-tab-users-btn');
+  
+  if (tab === 'companies') {
+    compSec.style.display = 'block';
+    userSec.style.display = 'none';
+    compBtn.classList.add('active');
+    userBtn.classList.remove('active');
+    loadAdminEmpresas();
+  } else {
+    compSec.style.display = 'none';
+    userSec.style.display = 'block';
+    compBtn.classList.remove('active');
+    userBtn.classList.add('active');
+    loadAdminUsers();
+  }
+}
+
+// ── ADMIN LOAD USERS ──
+async function loadAdminUsers() {
+  const tbody = document.getElementById('admin-users-tbody');
+  const countEl = document.getElementById('admin-users-count');
+  
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px"><span class="ai-spinner"></span> Carregando usuários...</td></tr>';
+  countEl.textContent = 'Total: carregando...';
+  
+  try {
+    const res = await fetch('api/admin_users_list.php');
+    const data = await res.json();
+    
+    if (!data.success) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:40px">Erro de permissão ou conexão.</td></tr>';
+      return;
+    }
+    
+    const users = data.data.users;
+    countEl.textContent = `Total: ${data.data.total}`;
+    
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:40px">Nenhum usuário cadastrado.</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><strong>#${u.id}</strong></td>
+        <td>
+          <span style="font-weight:700; color:var(--navy);">${u.nome}</span>
+          ${u.is_admin ? '<span class="status-badge status-VERIFICADA" style="padding:2px 8px; font-size:9px; margin-left:6px;">ADMIN</span>' : ''}
+        </td>
+        <td><span style="color:var(--text2); font-family:monospace;">${u.email}</span></td>
+        <td>
+          <span class="status-badge ${u.status === 'ativo' ? 'status-VERIFICADA' : 'status-PENDENTE'}" style="padding:4px 10px; font-size:10px;">
+            ${u.status.toUpperCase()}
+          </span>
+        </td>
+        <td><strong>${u.creditos}</strong></td>
+        <td style="font-size:12px; color:var(--muted);">${new Date(u.created_at).toLocaleDateString('pt-BR')} ${new Date(u.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:40px">Erro ao carregar lista de usuários.</td></tr>';
+  }
+}
